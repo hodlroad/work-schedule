@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d1117" />
+  <title>График работы 2/2</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background: #0d1117;
+      color: #f0f6fc;
+    }
+
+    .container {
+      width: min(100% - 24px, 720px);
+      margin: 0 auto;
+      padding: 24px 0 40px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      text-align: center;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      margin: 0 0 24px;
+      text-align: center;
+      color: #8b949e;
+      font-size: 14px;
+    }
+
+    .status-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 18px;
+      padding: 22px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .status-label {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .status {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .status.work {
+      color: #ff7b72;
+    }
+
+    .status.off {
+      color: #3fb950;
+    }
+
+    .today-date {
+      color: #c9d1d9;
+      font-size: 15px;
+    }
+
+    .next-days {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .info-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .info-title {
+      color: #8b949e;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .calendar {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .month-title {
+      font-size: 21px;
+      font-weight: 750;
+      text-align: center;
+      flex: 1;
+      text-transform: capitalize;
+    }
+
+    button {
+      width: 42px;
+      height: 42px;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      background: #21262d;
+      color: #f0f6fc;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #30363d;
+    }
+
+    .weekdays,
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 7px;
+    }
+
+    .weekday {
+      text-align: center;
+      color: #8b949e;
+      font-size: 12px;
+      font-weight: 600;
+      padding-bottom: 5px;
+    }
+
+    .day {
+      position: relative;
+      aspect-ratio: 1;
+      min-width: 0;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .day.work {
+      background: rgba(248, 81, 73, 0.14);
+      color: #ff7b72;
+      border-color: rgba(248, 81, 73, 0.28);
+    }
+
+    .day.off {
+      background: rgba(46, 160, 67, 0.16);
+      color: #56d364;
+      border-color: rgba(46, 160, 67, 0.32);
+    }
+
+    .day.empty {
+      background: transparent;
+    }
+
+    .day.today {
+      outline: 2px solid #58a6ff;
+      outline-offset: 2px;
+    }
+
+    .day.today::after {
+      content: "";
+      position: absolute;
+      bottom: 5px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #58a6ff;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 18px;
+      color: #8b949e;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot.work {
+      background: #ff7b72;
+    }
+
+    .dot.off {
+      background: #3fb950;
+    }
+
+    .dot.today {
+      background: #58a6ff;
+    }
+
+    .today-button {
+      display: block;
+      width: 100%;
+      height: auto;
+      padding: 11px 14px;
+      margin-top: 14px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        width: min(100% - 16px, 720px);
+        padding-top: 14px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .status {
+        font-size: 28px;
+      }
+
+      .calendar {
+        padding: 12px;
+      }
+
+      .days,
+      .weekdays {
+        gap: 5px;
+      }
+
+      .day {
+        border-radius: 9px;
+        font-size: 14px;
+      }
+
+      .next-days {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <h1>График работы</h1>
+    <p class="subtitle">2 рабочих / 2 выходных</p>
+
+    <section class="status-card">
+      <div class="status-label">Сегодня</div>
+      <div id="status" class="status"></div>
+      <div id="todayDate" class="today-date"></div>
+    </section>
+
+    <section class="next-days">
+      <div class="info-card">
+        <div class="info-title">Следующие выходные</div>
+        <div id="nextDaysOff" class="info-value"></div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-title">Следующие рабочие дни</div>
+        <div id="nextWorkDays" class="info-value"></div>
+      </div>
+    </section>
+
+    <section class="calendar">
+      <div class="calendar-header">
+        <button id="prevMonth" aria-label="Предыдущий месяц">‹</button>
+        <div id="monthTitle" class="month-title"></div>
+        <button id="nextMonth" aria-label="Следующий месяц">›</button>
+      </div>
+
+      <div class="weekdays">
+        <div class="weekday">Пн</div>
+        <div class="weekday">Вт</div>
+        <div class="weekday">Ср</div>
+        <div class="weekday">Чт</div>
+        <div class="weekday">Пт</div>
+        <div class="weekday">Сб</div>
+        <div class="weekday">Вс</div>
+      </div>
+
+      <div id="days" class="days"></div>
+
+      <div class="legend">
+        <div class="legend-item">
+          <span class="dot off"></span>
+          Выходной
+        </div>
+
+        <div class="legend-item">
+          <span class="dot work"></span>
+          Работа
+        </div>
+
+        <div class="legend-item">
+          <span class="dot today"></span>
+          Сегодня
+        </div>
+      </div>
+
+      <button id="goToday" class="today-button">
+        Вернуться к текущему месяцу
+      </button>
+    </section>
+  </main>
+
+  <script>
+    /*
+      Опорная дата:
+      23 сентября 2026 — первый выходной.
+
+      Цикл:
+      день 0 — выходной
+      день 1 — выходной
+      день 2 — работа
+      день 3 — работа
+    */
+
+    const anchorDate = new Date(2026, 8, 23);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let currentYear = today.getFullYear();
+    let currentMonth = today.getMonth();
+
+    const monthNames = [
+      "январь",
+      "февраль",
+      "март",
+      "апрель",
+      "май",
+      "июнь",
+      "июль",
+      "август",
+      "сентябрь",
+      "октябрь",
+      "ноябрь",
+      "декабрь"
+    ];
+
+    const monthNamesGenitive = [
+      "января",
+      "февраля",
+      "марта",
+      "апреля",
+      "мая",
+      "июня",
+      "июля",
+      "августа",
+      "сентября",
+      "октября",
+      "ноября",
+      "декабря"
+    ];
+
+    function normalizeDate(date) {
+      return new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
+    }
+
+    function getDifferenceInDays(date1, date2) {
+      const utc1 = Date.UTC(
+        date1.getFullYear(),
+        date1.getMonth(),
+        date1.getDate()
+      );
+
+      const utc2 = Date.UTC(
+        date2.getFullYear(),
+        date2.getMonth(),
+        date2.getDate()
+      );
+
+      return Math.floor((utc1 - utc2) / 86400000);
+    }
+
+    function isWorkDay(date) {
+      const diff = getDifferenceInDays(
+        normalizeDate(date),
+        anchorDate
+      );
+
+      const cycleDay = ((diff % 4) + 4) % 4;
+
+      return cycleDay === 2 || cycleDay === 3;
+    }
+
+    function isSameDate(date1, date2) {
+      return (
+        date1.getFullYear() === date2.getFullYear() &&
+        date1.getMonth() === date2.getMonth() &&
+        date1.getDate() === date2.getDate()
+      );
+    }
+
+    function formatDate(date) {
+      return `${date.getDate()} ${
+        monthNamesGenitive[date.getMonth()]
+      } ${date.getFullYear()}`;
+    }
+
+    function formatShortDate(date) {
+      return `${date.getDate()} ${
+        monthNamesGenitive[date.getMonth()]
+      }`;
+    }
+
+    function findNextPair(type) {
+      let date = new Date(today);
+
+      for (let i = 0; i < 10; i++) {
+        const currentType = isWorkDay(date) ? "work" : "off";
+
+        const nextDate = new Date(date);
+        nextDate.setDate(nextDate.getDate() + 1);
+
+        const nextType = isWorkDay(nextDate) ? "work" : "off";
+
+        if (currentType === type && nextType === type) {
+          return [date, nextDate];
+        }
+
+        date.setDate(date.getDate() + 1);
+      }
+
+      return null;
+    }
+
+    function updateStatus() {
+      const status = document.getElementById("status");
+      const todayDate = document.getElementById("todayDate");
+
+      const work = isWorkDay(today);
+
+      status.textContent = work ? "Рабочий день" : "Выходной";
+      status.className = `status ${work ? "work" : "off"}`;
+
+      todayDate.textContent = formatDate(today);
+
+      const nextDaysOff = findNextPair("off");
+      const nextWorkDays = findNextPair("work");
+
+      document.getElementById("nextDaysOff").textContent =
+        `${formatShortDate(nextDaysOff[0])} — ${formatShortDate(nextDaysOff[1])}`;
+
+      document.getElementById("nextWorkDays").textContent =
+        `${formatShortDate(nextWorkDays[0])} — ${formatShortDate(nextWorkDays[1])}`;
+    }
+
+    function renderCalendar() {
+      const daysContainer = document.getElementById("days");
+      const monthTitle = document.getElementById("monthTitle");
+
+      daysContainer.innerHTML = "";
+
+      monthTitle.textContent =
+        `${monthNames[currentMonth]} ${currentYear}`;
+
+      const firstDay = new Date(currentYear, currentMonth, 1);
+      const daysInMonth = new Date(
+        currentYear,
+        currentMonth + 1,
+        0
+      ).getDate();
+
+      let startDay = firstDay.getDay();
+
+      // JS: воскресенье = 0
+      // Нам нужно: понедельник = 0
+      startDay = startDay === 0 ? 6 : startDay - 1;
+
+      for (let i = 0; i < startDay; i++) {
+        const empty = document.createElement("div");
+        empty.className = "day empty";
+        daysContainer.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(currentYear, currentMonth, day);
+
+        const dayElement = document.createElement("div");
+
+        const work = isWorkDay(date);
+
+        dayElement.className =
+          `day ${work ? "work" : "off"}`;
+
+        dayElement.textContent = day;
+
+        if (isSameDate(date, today)) {
+          dayElement.classList.add("today");
+        }
+
+        daysContainer.appendChild(dayElement);
+      }
+    }
+
+    document
+      .getElementById("prevMonth")
+      .addEventListener("click", () => {
+        currentMonth--;
+
+        if (currentMonth < 0) {
+          currentMonth = 11;
+          currentYear--;
+        }
+
+        renderCalendar();
+      });
+
+    document
+      .getElementById("nextMonth")
+      .addEventListener("click", () => {
+        currentMonth++;
+
+        if (currentMonth > 11) {
+          currentMonth = 0;
+          currentYear++;
+        }
+
+        renderCalendar();
+      });
+
+    document
+      .getElementById("goToday")
+      .addEventListener("click", () => {
+        currentYear = today.getFullYear();
+        currentMonth = today.getMonth();
+        renderCalendar();
+      });
+
+    updateStatus();
+    renderCalendar();
+  </script>
+</body>
+</html>
