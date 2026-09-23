@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0d1117" />
+
   <title>График работы 2/2</title>
 
   <style>
@@ -199,6 +200,44 @@
       background: #58a6ff;
     }
 
+    .month-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .stat-card.work .stat-value {
+      color: #ff7b72;
+    }
+
+    .stat-card.off .stat-value {
+      color: #56d364;
+    }
+
+    .stat-card.hours .stat-value {
+      color: #58a6ff;
+    }
+
     .legend {
       display: flex;
       justify-content: center;
@@ -243,7 +282,14 @@
       font-weight: 600;
     }
 
-    @media (max-width: 500px) {
+    .hours-note {
+      text-align: center;
+      color: #8b949e;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 600px) {
       .container {
         width: min(100% - 16px, 720px);
         padding-top: 14px;
@@ -271,6 +317,10 @@
         font-size: 14px;
       }
 
+      .month-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
       .next-days {
         grid-template-columns: 1fr;
       }
@@ -280,6 +330,7 @@
 
 <body>
   <main class="container">
+
     <h1>График работы</h1>
     <p class="subtitle">2 рабочих / 2 выходных</p>
 
@@ -290,6 +341,7 @@
     </section>
 
     <section class="next-days">
+
       <div class="info-card">
         <div class="info-title">Следующие выходные</div>
         <div id="nextDaysOff" class="info-value"></div>
@@ -299,12 +351,16 @@
         <div class="info-title">Следующие рабочие дни</div>
         <div id="nextWorkDays" class="info-value"></div>
       </div>
+
     </section>
 
     <section class="calendar">
+
       <div class="calendar-header">
         <button id="prevMonth" aria-label="Предыдущий месяц">‹</button>
+
         <div id="monthTitle" class="month-title"></div>
+
         <button id="nextMonth" aria-label="Следующий месяц">›</button>
       </div>
 
@@ -320,7 +376,36 @@
 
       <div id="days" class="days"></div>
 
+      <div class="month-stats">
+
+        <div class="stat-card work">
+          <div id="monthShifts" class="stat-value">0</div>
+          <div class="stat-label">Смен</div>
+        </div>
+
+        <div class="stat-card off">
+          <div id="monthDaysOff" class="stat-value">0</div>
+          <div class="stat-label">Выходных</div>
+        </div>
+
+        <div class="stat-card hours">
+          <div id="monthHours" class="stat-value">0</div>
+          <div class="stat-label">Рабочих часов</div>
+        </div>
+
+        <div class="stat-card">
+          <div id="monthDays" class="stat-value">0</div>
+          <div class="stat-label">Дней в месяце</div>
+        </div>
+
+      </div>
+
+      <div class="hours-note">
+        Смена 12 часов · 1 час обед · учитывается 11 рабочих часов
+      </div>
+
       <div class="legend">
+
         <div class="legend-item">
           <span class="dot off"></span>
           Выходной
@@ -335,27 +420,43 @@
           <span class="dot today"></span>
           Сегодня
         </div>
+
       </div>
 
       <button id="goToday" class="today-button">
         Вернуться к текущему месяцу
       </button>
+
     </section>
+
   </main>
 
   <script>
+
     /*
-      Опорная дата:
-      23 сентября 2026 — первый выходной.
+      ОПОРНАЯ ДАТА
+
+      23 сентября 2026 года — первый выходной.
 
       Цикл:
-      день 0 — выходной
-      день 1 — выходной
-      день 2 — работа
-      день 3 — работа
+      0 — выходной
+      1 — выходной
+      2 — работа
+      3 — работа
     */
 
     const anchorDate = new Date(2026, 8, 23);
+
+    /*
+      Продолжительность смены:
+      12 часов всего
+      1 час — обед
+      11 часов — рабочее время
+    */
+
+    const shiftDuration = 12;
+    const lunchHours = 1;
+    const paidWorkHours = shiftDuration - lunchHours;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -402,6 +503,7 @@
     }
 
     function getDifferenceInDays(date1, date2) {
+
       const utc1 = Date.UTC(
         date1.getFullYear(),
         date1.getMonth(),
@@ -414,21 +516,26 @@
         date2.getDate()
       );
 
-      return Math.floor((utc1 - utc2) / 86400000);
+      return Math.floor(
+        (utc1 - utc2) / 86400000
+      );
     }
 
     function isWorkDay(date) {
+
       const diff = getDifferenceInDays(
         normalizeDate(date),
         anchorDate
       );
 
-      const cycleDay = ((diff % 4) + 4) % 4;
+      const cycleDay =
+        ((diff % 4) + 4) % 4;
 
       return cycleDay === 2 || cycleDay === 3;
     }
 
     function isSameDate(date1, date2) {
+
       return (
         date1.getFullYear() === date2.getFullYear() &&
         date1.getMonth() === date2.getMonth() &&
@@ -437,143 +544,303 @@
     }
 
     function formatDate(date) {
+
       return `${date.getDate()} ${
         monthNamesGenitive[date.getMonth()]
       } ${date.getFullYear()}`;
     }
 
     function formatShortDate(date) {
+
       return `${date.getDate()} ${
         monthNamesGenitive[date.getMonth()]
       }`;
     }
 
     function findNextPair(type) {
+
       let date = new Date(today);
 
       for (let i = 0; i < 10; i++) {
-        const currentType = isWorkDay(date) ? "work" : "off";
+
+        const currentType =
+          isWorkDay(date) ? "work" : "off";
 
         const nextDate = new Date(date);
-        nextDate.setDate(nextDate.getDate() + 1);
+        nextDate.setDate(
+          nextDate.getDate() + 1
+        );
 
-        const nextType = isWorkDay(nextDate) ? "work" : "off";
+        const nextType =
+          isWorkDay(nextDate) ? "work" : "off";
 
-        if (currentType === type && nextType === type) {
-          return [date, nextDate];
+        if (
+          currentType === type &&
+          nextType === type
+        ) {
+          return [
+            new Date(date),
+            nextDate
+          ];
         }
 
-        date.setDate(date.getDate() + 1);
+        date.setDate(
+          date.getDate() + 1
+        );
       }
 
       return null;
     }
 
     function updateStatus() {
-      const status = document.getElementById("status");
-      const todayDate = document.getElementById("todayDate");
+
+      const status =
+        document.getElementById("status");
+
+      const todayDate =
+        document.getElementById("todayDate");
 
       const work = isWorkDay(today);
 
-      status.textContent = work ? "Рабочий день" : "Выходной";
-      status.className = `status ${work ? "work" : "off"}`;
+      status.textContent =
+        work
+          ? "Рабочий день"
+          : "Выходной";
 
-      todayDate.textContent = formatDate(today);
+      status.className =
+        `status ${work ? "work" : "off"}`;
 
-      const nextDaysOff = findNextPair("off");
-      const nextWorkDays = findNextPair("work");
+      todayDate.textContent =
+        formatDate(today);
 
-      document.getElementById("nextDaysOff").textContent =
-        `${formatShortDate(nextDaysOff[0])} — ${formatShortDate(nextDaysOff[1])}`;
+      const nextDaysOff =
+        findNextPair("off");
 
-      document.getElementById("nextWorkDays").textContent =
-        `${formatShortDate(nextWorkDays[0])} — ${formatShortDate(nextWorkDays[1])}`;
+      const nextWorkDays =
+        findNextPair("work");
+
+      document
+        .getElementById("nextDaysOff")
+        .textContent =
+          `${formatShortDate(nextDaysOff[0])} — ${formatShortDate(nextDaysOff[1])}`;
+
+      document
+        .getElementById("nextWorkDays")
+        .textContent =
+          `${formatShortDate(nextWorkDays[0])} — ${formatShortDate(nextWorkDays[1])}`;
+    }
+
+    function updateMonthStats() {
+
+      const daysInMonth =
+        new Date(
+          currentYear,
+          currentMonth + 1,
+          0
+        ).getDate();
+
+      let workDays = 0;
+      let daysOff = 0;
+
+      for (
+        let day = 1;
+        day <= daysInMonth;
+        day++
+      ) {
+
+        const date =
+          new Date(
+            currentYear,
+            currentMonth,
+            day
+          );
+
+        if (isWorkDay(date)) {
+          workDays++;
+        } else {
+          daysOff++;
+        }
+      }
+
+      const workHours =
+        workDays * paidWorkHours;
+
+      document
+        .getElementById("monthShifts")
+        .textContent = workDays;
+
+      document
+        .getElementById("monthDaysOff")
+        .textContent = daysOff;
+
+      document
+        .getElementById("monthHours")
+        .textContent = workHours;
+
+      document
+        .getElementById("monthDays")
+        .textContent = daysInMonth;
     }
 
     function renderCalendar() {
-      const daysContainer = document.getElementById("days");
-      const monthTitle = document.getElementById("monthTitle");
+
+      const daysContainer =
+        document.getElementById("days");
+
+      const monthTitle =
+        document.getElementById("monthTitle");
 
       daysContainer.innerHTML = "";
 
       monthTitle.textContent =
         `${monthNames[currentMonth]} ${currentYear}`;
 
-      const firstDay = new Date(currentYear, currentMonth, 1);
-      const daysInMonth = new Date(
-        currentYear,
-        currentMonth + 1,
-        0
-      ).getDate();
+      const firstDay =
+        new Date(
+          currentYear,
+          currentMonth,
+          1
+        );
 
-      let startDay = firstDay.getDay();
+      const daysInMonth =
+        new Date(
+          currentYear,
+          currentMonth + 1,
+          0
+        ).getDate();
 
-      // JS: воскресенье = 0
-      // Нам нужно: понедельник = 0
-      startDay = startDay === 0 ? 6 : startDay - 1;
+      let startDay =
+        firstDay.getDay();
 
-      for (let i = 0; i < startDay; i++) {
-        const empty = document.createElement("div");
-        empty.className = "day empty";
-        daysContainer.appendChild(empty);
+      /*
+        JavaScript:
+        воскресенье = 0
+
+        Календарь:
+        понедельник = 0
+      */
+
+      startDay =
+        startDay === 0
+          ? 6
+          : startDay - 1;
+
+      for (
+        let i = 0;
+        i < startDay;
+        i++
+      ) {
+
+        const empty =
+          document.createElement("div");
+
+        empty.className =
+          "day empty";
+
+        daysContainer.appendChild(
+          empty
+        );
       }
 
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(currentYear, currentMonth, day);
+      for (
+        let day = 1;
+        day <= daysInMonth;
+        day++
+      ) {
 
-        const dayElement = document.createElement("div");
+        const date =
+          new Date(
+            currentYear,
+            currentMonth,
+            day
+          );
 
-        const work = isWorkDay(date);
+        const dayElement =
+          document.createElement("div");
+
+        const work =
+          isWorkDay(date);
 
         dayElement.className =
           `day ${work ? "work" : "off"}`;
 
-        dayElement.textContent = day;
+        dayElement.textContent =
+          day;
 
-        if (isSameDate(date, today)) {
-          dayElement.classList.add("today");
+        if (
+          isSameDate(
+            date,
+            today
+          )
+        ) {
+          dayElement
+            .classList
+            .add("today");
         }
 
-        daysContainer.appendChild(dayElement);
+        daysContainer.appendChild(
+          dayElement
+        );
       }
+
+      updateMonthStats();
     }
 
     document
       .getElementById("prevMonth")
-      .addEventListener("click", () => {
-        currentMonth--;
+      .addEventListener(
+        "click",
+        () => {
 
-        if (currentMonth < 0) {
-          currentMonth = 11;
-          currentYear--;
+          currentMonth--;
+
+          if (currentMonth < 0) {
+
+            currentMonth = 11;
+            currentYear--;
+          }
+
+          renderCalendar();
         }
-
-        renderCalendar();
-      });
+      );
 
     document
       .getElementById("nextMonth")
-      .addEventListener("click", () => {
-        currentMonth++;
+      .addEventListener(
+        "click",
+        () => {
 
-        if (currentMonth > 11) {
-          currentMonth = 0;
-          currentYear++;
+          currentMonth++;
+
+          if (currentMonth > 11) {
+
+            currentMonth = 0;
+            currentYear++;
+          }
+
+          renderCalendar();
         }
-
-        renderCalendar();
-      });
+      );
 
     document
       .getElementById("goToday")
-      .addEventListener("click", () => {
-        currentYear = today.getFullYear();
-        currentMonth = today.getMonth();
-        renderCalendar();
-      });
+      .addEventListener(
+        "click",
+        () => {
+
+          currentYear =
+            today.getFullYear();
+
+          currentMonth =
+            today.getMonth();
+
+          renderCalendar();
+        }
+      );
 
     updateStatus();
     renderCalendar();
+
   </script>
 </body>
 </html>
