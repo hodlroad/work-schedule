@@ -4,9 +4,52 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0d1117" />
+
   <title>График работы 2/2</title>
 
   <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface-2: #21262d;
+      --border: #30363d;
+
+      --text: #f0f6fc;
+      --text-secondary: #c9d1d9;
+      --muted: #8b949e;
+
+      --work: #ff7b72;
+      --work-bg: rgba(248, 81, 73, 0.14);
+      --work-border: rgba(248, 81, 73, 0.28);
+
+      --off: #56d364;
+      --off-bg: rgba(46, 160, 67, 0.16);
+      --off-border: rgba(46, 160, 67, 0.32);
+
+      --accent: #58a6ff;
+    }
+
+    [data-theme="light"] {
+      --bg: #f6f8fa;
+      --surface: #ffffff;
+      --surface-2: #f3f4f6;
+      --border: #d0d7de;
+
+      --text: #1f2328;
+      --text-secondary: #24292f;
+      --muted: #656d76;
+
+      --work: #cf222e;
+      --work-bg: rgba(207, 34, 46, 0.08);
+      --work-border: rgba(207, 34, 46, 0.22);
+
+      --off: #1a7f37;
+      --off-bg: rgba(26, 127, 55, 0.08);
+      --off-border: rgba(26, 127, 55, 0.22);
+
+      --accent: #0969da;
+    }
+
     * {
       box-sizing: border-box;
     }
@@ -20,8 +63,11 @@
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
-      background: #0d1117;
-      color: #f0f6fc;
+      background: var(--bg);
+      color: var(--text);
+      transition:
+        background 0.2s ease,
+        color 0.2s ease;
     }
 
     .container {
@@ -39,43 +85,55 @@
     .subtitle {
       margin: 0 0 18px;
       text-align: center;
-      color: #8b949e;
+      color: var(--muted);
       font-size: 14px;
     }
 
-    .shift-switcher {
+    .controls {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 16px;
+    }
+
+    .switcher {
+      display: grid;
+      gap: 8px;
       padding: 6px;
-      background: #161b22;
-      border: 1px solid #30363d;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 14px;
     }
 
-    .shift-button {
+    .shift-switcher {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .theme-switcher {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .switch-button {
       width: 100%;
       height: auto;
-      padding: 12px 10px;
+      padding: 11px 8px;
       border: 1px solid transparent;
       border-radius: 10px;
       background: transparent;
-      color: #8b949e;
-      font-size: 15px;
+      color: var(--muted);
+      font-size: 14px;
       font-weight: 700;
       cursor: pointer;
     }
 
-    .shift-button.active {
-      background: #21262d;
-      color: #f0f6fc;
-      border-color: #30363d;
+    .switch-button.active {
+      background: var(--surface-2);
+      color: var(--text);
+      border-color: var(--border);
     }
 
     .status-card {
-      background: #161b22;
-      border: 1px solid #30363d;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 18px;
       padding: 22px;
       margin-bottom: 16px;
@@ -83,7 +141,7 @@
     }
 
     .status-label {
-      color: #8b949e;
+      color: var(--muted);
       font-size: 14px;
       margin-bottom: 8px;
     }
@@ -95,15 +153,15 @@
     }
 
     .status.work {
-      color: #ff7b72;
+      color: var(--work);
     }
 
     .status.off {
-      color: #3fb950;
+      color: var(--off);
     }
 
     .today-date {
-      color: #c9d1d9;
+      color: var(--text-secondary);
       font-size: 15px;
     }
 
@@ -115,14 +173,14 @@
     }
 
     .info-card {
-      background: #161b22;
-      border: 1px solid #30363d;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 14px;
       padding: 16px;
     }
 
     .info-title {
-      color: #8b949e;
+      color: var(--muted);
       font-size: 13px;
       margin-bottom: 5px;
     }
@@ -133,8 +191,8 @@
     }
 
     .calendar {
-      background: #161b22;
-      border: 1px solid #30363d;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 18px;
       padding: 18px;
     }
@@ -158,18 +216,18 @@
     .calendar-nav-button {
       width: 42px;
       height: 42px;
-      border: 1px solid #30363d;
+      border: 1px solid var(--border);
       border-radius: 10px;
-      background: #21262d;
-      color: #f0f6fc;
+      background: var(--surface-2);
+      color: var(--text);
       font-size: 22px;
       cursor: pointer;
     }
 
     .calendar-nav-button:hover,
     .today-button:hover,
-    .shift-button:hover {
-      background: #30363d;
+    .switch-button:hover {
+      filter: brightness(0.97);
     }
 
     .weekdays,
@@ -181,7 +239,7 @@
 
     .weekday {
       text-align: center;
-      color: #8b949e;
+      color: var(--muted);
       font-size: 12px;
       font-weight: 600;
       padding-bottom: 5px;
@@ -201,15 +259,15 @@
     }
 
     .day.work {
-      background: rgba(248, 81, 73, 0.14);
-      color: #ff7b72;
-      border-color: rgba(248, 81, 73, 0.28);
+      background: var(--work-bg);
+      color: var(--work);
+      border-color: var(--work-border);
     }
 
     .day.off {
-      background: rgba(46, 160, 67, 0.16);
-      color: #56d364;
-      border-color: rgba(46, 160, 67, 0.32);
+      background: var(--off-bg);
+      color: var(--off);
+      border-color: var(--off-border);
     }
 
     .day.empty {
@@ -217,7 +275,7 @@
     }
 
     .day.today {
-      outline: 2px solid #58a6ff;
+      outline: 2px solid var(--accent);
       outline-offset: 2px;
     }
 
@@ -228,7 +286,7 @@
       width: 4px;
       height: 4px;
       border-radius: 50%;
-      background: #58a6ff;
+      background: var(--accent);
     }
 
     .month-stats {
@@ -239,8 +297,8 @@
     }
 
     .stat-card {
-      background: #0d1117;
-      border: 1px solid #30363d;
+      background: var(--bg);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 14px 10px;
       text-align: center;
@@ -254,24 +312,24 @@
 
     .stat-label {
       font-size: 12px;
-      color: #8b949e;
+      color: var(--muted);
     }
 
     .stat-card.work .stat-value {
-      color: #ff7b72;
+      color: var(--work);
     }
 
     .stat-card.off .stat-value {
-      color: #56d364;
+      color: var(--off);
     }
 
     .stat-card.hours .stat-value {
-      color: #58a6ff;
+      color: var(--accent);
     }
 
     .hours-note {
       text-align: center;
-      color: #8b949e;
+      color: var(--muted);
       font-size: 12px;
       margin-top: 10px;
     }
@@ -281,7 +339,7 @@
       justify-content: center;
       gap: 18px;
       margin-top: 18px;
-      color: #8b949e;
+      color: var(--muted);
       font-size: 13px;
       flex-wrap: wrap;
     }
@@ -299,15 +357,15 @@
     }
 
     .dot.work {
-      background: #ff7b72;
+      background: var(--work);
     }
 
     .dot.off {
-      background: #3fb950;
+      background: var(--off);
     }
 
     .dot.today {
-      background: #58a6ff;
+      background: var(--accent);
     }
 
     .today-button {
@@ -316,10 +374,10 @@
       height: auto;
       padding: 11px 14px;
       margin-top: 14px;
-      border: 1px solid #30363d;
+      border: 1px solid var(--border);
       border-radius: 10px;
-      background: #21262d;
-      color: #f0f6fc;
+      background: var(--surface-2);
+      color: var(--text);
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
@@ -360,6 +418,10 @@
       .next-days {
         grid-template-columns: 1fr;
       }
+
+      .theme-switcher {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -370,14 +432,32 @@
     <h1>График работы</h1>
     <p class="subtitle">2 рабочих / 2 выходных</p>
 
-    <div class="shift-switcher">
-      <button id="shift1Button" class="shift-button">
-        Смена 1
-      </button>
+    <div class="controls">
 
-      <button id="shift2Button" class="shift-button">
-        Смена 2
-      </button>
+      <div class="switcher shift-switcher">
+        <button id="shift1Button" class="switch-button">
+          Смена 1
+        </button>
+
+        <button id="shift2Button" class="switch-button">
+          Смена 2
+        </button>
+      </div>
+
+      <div class="switcher theme-switcher">
+        <button id="themeSystem" class="switch-button">
+          Система
+        </button>
+
+        <button id="themeLight" class="switch-button">
+          Светлая
+        </button>
+
+        <button id="themeDark" class="switch-button">
+          Тёмная
+        </button>
+      </div>
+
     </div>
 
     <section class="status-card">
@@ -490,23 +570,6 @@
   </main>
 
   <script>
-    /*
-      Опорная дата:
-      23 сентября 2026 года.
-
-      Смена 1:
-      23.09 — выходной
-      24.09 — выходной
-      25.09 — работа
-      26.09 — работа
-
-      Смена 2:
-      23.09 — работа
-      24.09 — работа
-      25.09 — выходной
-      26.09 — выходной
-    */
-
     const anchorDate = new Date(2026, 8, 23);
 
     const schedules = {
@@ -520,6 +583,9 @@
 
     let selectedShift =
       localStorage.getItem("selectedShift") || "shift1";
+
+    let selectedTheme =
+      localStorage.getItem("selectedTheme") || "system";
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -659,6 +725,84 @@
           "active",
           selectedShift === "shift2"
         );
+    }
+
+    function selectShift(shift) {
+      selectedShift = shift;
+
+      localStorage.setItem(
+        "selectedShift",
+        selectedShift
+      );
+
+      updateShiftButtons();
+      updateStatus();
+      renderCalendar();
+    }
+
+    function getSystemTheme() {
+      return window.matchMedia(
+        "(prefers-color-scheme: light)"
+      ).matches
+        ? "light"
+        : "dark";
+    }
+
+    function applyTheme() {
+      const effectiveTheme =
+        selectedTheme === "system"
+          ? getSystemTheme()
+          : selectedTheme;
+
+      document.documentElement.setAttribute(
+        "data-theme",
+        effectiveTheme
+      );
+
+      document
+        .querySelector('meta[name="theme-color"]')
+        .setAttribute(
+          "content",
+          effectiveTheme === "light"
+            ? "#f6f8fa"
+            : "#0d1117"
+        );
+
+      updateThemeButtons();
+    }
+
+    function updateThemeButtons() {
+      document
+        .getElementById("themeSystem")
+        .classList.toggle(
+          "active",
+          selectedTheme === "system"
+        );
+
+      document
+        .getElementById("themeLight")
+        .classList.toggle(
+          "active",
+          selectedTheme === "light"
+        );
+
+      document
+        .getElementById("themeDark")
+        .classList.toggle(
+          "active",
+          selectedTheme === "dark"
+        );
+    }
+
+    function selectTheme(theme) {
+      selectedTheme = theme;
+
+      localStorage.setItem(
+        "selectedTheme",
+        selectedTheme
+      );
+
+      applyTheme();
     }
 
     function updateStatus() {
@@ -841,19 +985,6 @@
       updateMonthStats();
     }
 
-    function selectShift(shift) {
-      selectedShift = shift;
-
-      localStorage.setItem(
-        "selectedShift",
-        selectedShift
-      );
-
-      updateShiftButtons();
-      updateStatus();
-      renderCalendar();
-    }
-
     document
       .getElementById("shift1Button")
       .addEventListener(
@@ -866,6 +997,27 @@
       .addEventListener(
         "click",
         () => selectShift("shift2")
+      );
+
+    document
+      .getElementById("themeSystem")
+      .addEventListener(
+        "click",
+        () => selectTheme("system")
+      );
+
+    document
+      .getElementById("themeLight")
+      .addEventListener(
+        "click",
+        () => selectTheme("light")
+      );
+
+    document
+      .getElementById("themeDark")
+      .addEventListener(
+        "click",
+        () => selectTheme("dark")
       );
 
     document
@@ -915,6 +1067,15 @@
         }
       );
 
+    window
+      .matchMedia("(prefers-color-scheme: light)")
+      .addEventListener("change", () => {
+        if (selectedTheme === "system") {
+          applyTheme();
+        }
+      });
+
+    applyTheme();
     updateShiftButtons();
     updateStatus();
     renderCalendar();
