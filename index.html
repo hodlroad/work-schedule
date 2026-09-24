@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0d1117" />
-
   <title>График работы 2/2</title>
 
   <style>
@@ -38,10 +37,40 @@
     }
 
     .subtitle {
-      margin: 0 0 24px;
+      margin: 0 0 18px;
       text-align: center;
       color: #8b949e;
       font-size: 14px;
+    }
+
+    .shift-switcher {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 6px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 14px;
+    }
+
+    .shift-button {
+      width: 100%;
+      height: auto;
+      padding: 12px 10px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: #8b949e;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .shift-button.active {
+      background: #21262d;
+      color: #f0f6fc;
+      border-color: #30363d;
     }
 
     .status-card {
@@ -126,7 +155,7 @@
       text-transform: capitalize;
     }
 
-    button {
+    .calendar-nav-button {
       width: 42px;
       height: 42px;
       border: 1px solid #30363d;
@@ -137,7 +166,9 @@
       cursor: pointer;
     }
 
-    button:hover {
+    .calendar-nav-button:hover,
+    .today-button:hover,
+    .shift-button:hover {
       background: #30363d;
     }
 
@@ -238,6 +269,13 @@
       color: #58a6ff;
     }
 
+    .hours-note {
+      text-align: center;
+      color: #8b949e;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
     .legend {
       display: flex;
       justify-content: center;
@@ -278,15 +316,13 @@
       height: auto;
       padding: 11px 14px;
       margin-top: 14px;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      background: #21262d;
+      color: #f0f6fc;
       font-size: 14px;
       font-weight: 600;
-    }
-
-    .hours-note {
-      text-align: center;
-      color: #8b949e;
-      font-size: 12px;
-      margin-top: 10px;
+      cursor: pointer;
     }
 
     @media (max-width: 600px) {
@@ -334,6 +370,16 @@
     <h1>График работы</h1>
     <p class="subtitle">2 рабочих / 2 выходных</p>
 
+    <div class="shift-switcher">
+      <button id="shift1Button" class="shift-button">
+        Смена 1
+      </button>
+
+      <button id="shift2Button" class="shift-button">
+        Смена 2
+      </button>
+    </div>
+
     <section class="status-card">
       <div class="status-label">Сегодня</div>
       <div id="status" class="status"></div>
@@ -357,11 +403,23 @@
     <section class="calendar">
 
       <div class="calendar-header">
-        <button id="prevMonth" aria-label="Предыдущий месяц">‹</button>
+        <button
+          id="prevMonth"
+          class="calendar-nav-button"
+          aria-label="Предыдущий месяц"
+        >
+          ‹
+        </button>
 
         <div id="monthTitle" class="month-title"></div>
 
-        <button id="nextMonth" aria-label="Следующий месяц">›</button>
+        <button
+          id="nextMonth"
+          class="calendar-nav-button"
+          aria-label="Следующий месяц"
+        >
+          ›
+        </button>
       </div>
 
       <div class="weekdays">
@@ -432,31 +490,36 @@
   </main>
 
   <script>
-
     /*
-      ОПОРНАЯ ДАТА
+      Опорная дата:
+      23 сентября 2026 года.
 
-      23 сентября 2026 года — первый выходной.
+      Смена 1:
+      23.09 — выходной
+      24.09 — выходной
+      25.09 — работа
+      26.09 — работа
 
-      Цикл:
-      0 — выходной
-      1 — выходной
-      2 — работа
-      3 — работа
+      Смена 2:
+      23.09 — работа
+      24.09 — работа
+      25.09 — выходной
+      26.09 — выходной
     */
 
     const anchorDate = new Date(2026, 8, 23);
 
-    /*
-      Продолжительность смены:
-      12 часов всего
-      1 час — обед
-      11 часов — рабочее время
-    */
+    const schedules = {
+      shift1: ["off", "off", "work", "work"],
+      shift2: ["work", "work", "off", "off"]
+    };
 
     const shiftDuration = 12;
     const lunchHours = 1;
     const paidWorkHours = shiftDuration - lunchHours;
+
+    let selectedShift =
+      localStorage.getItem("selectedShift") || "shift1";
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -503,7 +566,6 @@
     }
 
     function getDifferenceInDays(date1, date2) {
-
       const utc1 = Date.UTC(
         date1.getFullYear(),
         date1.getMonth(),
@@ -516,26 +578,25 @@
         date2.getDate()
       );
 
-      return Math.floor(
-        (utc1 - utc2) / 86400000
-      );
+      return Math.floor((utc1 - utc2) / 86400000);
     }
 
-    function isWorkDay(date) {
-
+    function getDayType(date) {
       const diff = getDifferenceInDays(
         normalizeDate(date),
         anchorDate
       );
 
-      const cycleDay =
-        ((diff % 4) + 4) % 4;
+      const cycleDay = ((diff % 4) + 4) % 4;
 
-      return cycleDay === 2 || cycleDay === 3;
+      return schedules[selectedShift][cycleDay];
+    }
+
+    function isWorkDay(date) {
+      return getDayType(date) === "work";
     }
 
     function isSameDate(date1, date2) {
-
       return (
         date1.getFullYear() === date2.getFullYear() &&
         date1.getMonth() === date2.getMonth() &&
@@ -544,32 +605,26 @@
     }
 
     function formatDate(date) {
-
       return `${date.getDate()} ${
         monthNamesGenitive[date.getMonth()]
       } ${date.getFullYear()}`;
     }
 
     function formatShortDate(date) {
-
       return `${date.getDate()} ${
         monthNamesGenitive[date.getMonth()]
       }`;
     }
 
     function findNextPair(type) {
-
       let date = new Date(today);
 
       for (let i = 0; i < 10; i++) {
-
         const currentType =
           isWorkDay(date) ? "work" : "off";
 
         const nextDate = new Date(date);
-        nextDate.setDate(
-          nextDate.getDate() + 1
-        );
+        nextDate.setDate(nextDate.getDate() + 1);
 
         const nextType =
           isWorkDay(nextDate) ? "work" : "off";
@@ -584,16 +639,29 @@
           ];
         }
 
-        date.setDate(
-          date.getDate() + 1
-        );
+        date.setDate(date.getDate() + 1);
       }
 
       return null;
     }
 
-    function updateStatus() {
+    function updateShiftButtons() {
+      document
+        .getElementById("shift1Button")
+        .classList.toggle(
+          "active",
+          selectedShift === "shift1"
+        );
 
+      document
+        .getElementById("shift2Button")
+        .classList.toggle(
+          "active",
+          selectedShift === "shift2"
+        );
+    }
+
+    function updateStatus() {
       const status =
         document.getElementById("status");
 
@@ -631,7 +699,6 @@
     }
 
     function updateMonthStats() {
-
       const daysInMonth =
         new Date(
           currentYear,
@@ -647,7 +714,6 @@
         day <= daysInMonth;
         day++
       ) {
-
         const date =
           new Date(
             currentYear,
@@ -683,7 +749,6 @@
     }
 
     function renderCalendar() {
-
       const daysContainer =
         document.getElementById("days");
 
@@ -712,14 +777,6 @@
       let startDay =
         firstDay.getDay();
 
-      /*
-        JavaScript:
-        воскресенье = 0
-
-        Календарь:
-        понедельник = 0
-      */
-
       startDay =
         startDay === 0
           ? 6
@@ -730,7 +787,6 @@
         i < startDay;
         i++
       ) {
-
         const empty =
           document.createElement("div");
 
@@ -747,7 +803,6 @@
         day <= daysInMonth;
         day++
       ) {
-
         const date =
           new Date(
             currentYear,
@@ -786,16 +841,41 @@
       updateMonthStats();
     }
 
+    function selectShift(shift) {
+      selectedShift = shift;
+
+      localStorage.setItem(
+        "selectedShift",
+        selectedShift
+      );
+
+      updateShiftButtons();
+      updateStatus();
+      renderCalendar();
+    }
+
+    document
+      .getElementById("shift1Button")
+      .addEventListener(
+        "click",
+        () => selectShift("shift1")
+      );
+
+    document
+      .getElementById("shift2Button")
+      .addEventListener(
+        "click",
+        () => selectShift("shift2")
+      );
+
     document
       .getElementById("prevMonth")
       .addEventListener(
         "click",
         () => {
-
           currentMonth--;
 
           if (currentMonth < 0) {
-
             currentMonth = 11;
             currentYear--;
           }
@@ -809,11 +889,9 @@
       .addEventListener(
         "click",
         () => {
-
           currentMonth++;
 
           if (currentMonth > 11) {
-
             currentMonth = 0;
             currentYear++;
           }
@@ -827,7 +905,6 @@
       .addEventListener(
         "click",
         () => {
-
           currentYear =
             today.getFullYear();
 
@@ -838,9 +915,9 @@
         }
       );
 
+    updateShiftButtons();
     updateStatus();
     renderCalendar();
-
   </script>
 </body>
 </html>
