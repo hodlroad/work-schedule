@@ -415,6 +415,107 @@
       display: none;
     }
 
+    .date-picker {
+      position: relative;
+    }
+
+    .date-picker svg {
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* Настоящее поле даты спрятано, открываю его системный выбор из кнопки */
+    .date-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .day.selected {
+      outline: 2px dashed var(--text-secondary);
+      outline-offset: 2px;
+    }
+
+    .date-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: -6px 0 14px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .date-info[hidden] {
+      display: none;
+    }
+
+    .date-info.work {
+      background: var(--work-bg);
+      border-color: var(--work-border);
+      color: var(--work);
+    }
+
+    .date-info.off {
+      background: var(--off-bg);
+      border-color: var(--off-border);
+      color: var(--off);
+    }
+
+    .date-info-close {
+      flex: none;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: inherit;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .update-banner {
+      position: fixed;
+      left: 50%;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      width: min(100% - 24px, 480px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 12px 12px 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .update-banner[hidden] {
+      display: none;
+    }
+
+    .update-button {
+      flex: none;
+      padding: 9px 14px;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     @media (max-width: 600px) {
       .container {
         width: min(100% - 16px, 720px);
@@ -499,6 +600,22 @@
         <button id="prevMonth" class="calendar-nav-button" aria-label="Предыдущий месяц">‹</button>
         <div id="monthTitle" class="month-title"></div>
         <button id="nextMonth" class="calendar-nav-button" aria-label="Следующий месяц">›</button>
+
+        <div class="date-picker">
+          <button id="pickDate" class="calendar-nav-button" aria-label="Перейти к дате">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M3 10h18M8 3v4M16 3v4" />
+            </svg>
+          </button>
+          <input id="dateInput" class="date-input" type="date" tabindex="-1" aria-hidden="true" />
+        </div>
+      </div>
+
+      <div id="dateInfo" class="date-info" hidden>
+        <span id="dateInfoText"></span>
+        <button id="clearDate" class="date-info-close" aria-label="Сбросить выбранную дату">×</button>
       </div>
 
       <div class="weekdays">
@@ -551,6 +668,11 @@
     </section>
   </main>
 
+  <div id="updateBanner" class="update-banner" role="status" hidden>
+    <span>Есть новая версия</span>
+    <button id="updateButton" class="update-button">Обновить</button>
+  </div>
+
   <script>
     // День, от которого отсчитывается цикл смен
     const ANCHOR_DATE = new Date(2026, 8, 23);
@@ -579,6 +701,11 @@
       "июля", "августа", "сентября", "октября", "ноября", "декабря"
     ];
 
+    const WEEKDAYS = [
+      "воскресенье", "понедельник", "вторник", "среда",
+      "четверг", "пятница", "суббота"
+    ];
+
     const $ = (id) => document.getElementById(id);
 
     // localStorage может быть недоступен (приватный режим) или хранить мусор
@@ -605,6 +732,9 @@
     let today = startOfToday();
     let viewYear = today.getFullYear();
     let viewMonth = today.getMonth();
+
+    // Дата, выбранная через «Перейти к дате»; null — ничего не выбрано
+    let selectedDate = null;
 
     // ---------- Даты ----------
 
@@ -638,6 +768,18 @@
 
     function formatShortDate(date) {
       return `${date.getDate()} ${MONTHS_GENITIVE[date.getMonth()]}`;
+    }
+
+    // Формат поля <input type="date">: ГГГГ-ММ-ДД
+    function toInputValue(date) {
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${date.getFullYear()}-${month}-${day}`;
+    }
+
+    function fromInputValue(value) {
+      const [year, month, day] = value.split("-").map(Number);
+      return year && month && day ? new Date(year, month - 1, day) : null;
     }
 
     function formatRange(start, end) {
@@ -770,8 +912,14 @@
           cell.classList.add("today");
         }
 
+        if (selectedDate && isSameDate(date, selectedDate)) {
+          cell.classList.add("selected");
+        }
+
         days.appendChild(cell);
       }
+
+      renderDateInfo();
 
       $("monthShifts").textContent = workDays;
       $("monthDaysOff").textContent = daysInMonth - workDays;
@@ -779,6 +927,21 @@
       $("monthDays").textContent = daysInMonth;
 
       $("goToday").hidden = isCurrentMonthShown();
+    }
+
+    function renderDateInfo() {
+      const info = $("dateInfo");
+      info.hidden = !selectedDate;
+
+      if (!selectedDate) {
+        return;
+      }
+
+      const type = getDayType(selectedDate);
+      info.className = `date-info ${type}`;
+      $("dateInfoText").textContent =
+        `${formatDate(selectedDate)}, ${WEEKDAYS[selectedDate.getDay()]} · ` +
+        (type === "work" ? "рабочий день" : "выходной");
     }
 
     function renderAll() {
@@ -825,9 +988,30 @@
     }
 
     function goToCurrentMonth() {
+      selectedDate = null;
       viewYear = today.getFullYear();
       viewMonth = today.getMonth();
       renderCalendar();
+    }
+
+    function showDate(date) {
+      selectedDate = date;
+      viewYear = date.getFullYear();
+      viewMonth = date.getMonth();
+      renderCalendar();
+    }
+
+    function openDatePicker() {
+      const input = $("dateInput");
+      input.value = toInputValue(selectedDate || today);
+
+      try {
+        input.showPicker();
+      } catch (error) {
+        // Старые браузеры без showPicker
+        input.focus();
+        input.click();
+      }
     }
 
     // Если страница была открыта со вчера, переключаю «сегодня» на новый день
@@ -896,6 +1080,22 @@
     $("prevMonth").addEventListener("click", () => changeMonth(-1));
     $("nextMonth").addEventListener("click", () => changeMonth(1));
     $("goToday").addEventListener("click", goToCurrentMonth);
+    $("pickDate").addEventListener("click", openDatePicker);
+
+    $("dateInput").addEventListener("change", (event) => {
+      const date = fromInputValue(event.target.value);
+
+      if (date) {
+        showDate(date);
+      }
+    });
+
+    $("clearDate").addEventListener("click", () => {
+      selectedDate = null;
+      renderCalendar();
+    });
+
+    $("updateButton").addEventListener("click", () => location.reload());
 
     matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
       if (selectedTheme === "system") {
@@ -916,8 +1116,37 @@
     setupSwipe();
     scheduleMidnightRefresh();
 
+    setupServiceWorker();
+
     // Офлайн-режим работает только по http(s), с диска service worker не включится
-    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    function setupServiceWorker() {
+      if (!("serviceWorker" in navigator) || !location.protocol.startsWith("http")) {
+        return;
+      }
+
+      // При самой первой установке смена service worker'а — не обновление
+      const hadController = Boolean(navigator.serviceWorker.controller);
+      const showUpdateBanner = () => {
+        $("updateBanner").hidden = false;
+      };
+
+      // Service worker нашёл в сети новую версию страницы
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "update-available") {
+          showUpdateBanner();
+        }
+      });
+
+      // Установился новый service worker
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (hadController) {
+          showUpdateBanner();
+        }
+      });
+
+      // Без этого сообщения от service worker'а копятся в очереди до конца загрузки
+      navigator.serviceWorker.startMessages();
+
       navigator.serviceWorker.register("sw.js").catch((error) => {
         console.warn("Не удалось включить офлайн-режим", error);
       });
