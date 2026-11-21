@@ -7,6 +7,29 @@
 
   <title>График работы 2/2</title>
 
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+
+  <script>
+    // Ставлю тему до отрисовки страницы, чтобы она не мигала при загрузке
+    (function () {
+      let theme = "system";
+
+      try {
+        theme = localStorage.getItem("selectedTheme") || "system";
+      } catch (error) {}
+
+      if (theme !== "light" && theme !== "dark") {
+        theme = matchMedia("(prefers-color-scheme: light)").matches
+          ? "light"
+          : "dark";
+      }
+
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
+
   <style>
     :root {
       --bg: #0d1117;
@@ -57,17 +80,20 @@
     body {
       margin: 0;
       min-height: 100vh;
-      font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
         sans-serif;
       background: var(--bg);
       color: var(--text);
-      transition:
-        background 0.2s ease,
-        color 0.2s ease;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .container {
@@ -114,7 +140,6 @@
 
     .switch-button {
       width: 100%;
-      height: auto;
       padding: 11px 8px;
       border: 1px solid transparent;
       border-radius: 10px;
@@ -195,6 +220,8 @@
       border: 1px solid var(--border);
       border-radius: 18px;
       padding: 18px;
+      /* Горизонтальный свайп обрабатываю сам, вертикальная прокрутка остаётся браузеру */
+      touch-action: pan-y;
     }
 
     .calendar-header {
@@ -224,10 +251,16 @@
       cursor: pointer;
     }
 
-    .calendar-nav-button:hover,
-    .today-button:hover,
-    .switch-button:hover {
-      filter: brightness(0.97);
+    @media (hover: hover) {
+      .calendar-nav-button:hover,
+      .today-button:hover {
+        border-color: var(--muted);
+      }
+
+      .switch-button:not(.active):hover {
+        background: var(--surface-2);
+        color: var(--text);
+      }
     }
 
     .weekdays,
@@ -268,10 +301,6 @@
       background: var(--off-bg);
       color: var(--off);
       border-color: var(--off-border);
-    }
-
-    .day.empty {
-      background: transparent;
     }
 
     .day.today {
@@ -371,7 +400,6 @@
     .today-button {
       display: block;
       width: 100%;
-      height: auto;
       padding: 11px 14px;
       margin-top: 14px;
       border: 1px solid var(--border);
@@ -381,6 +409,10 @@
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
+    }
+
+    .today-button[hidden] {
+      display: none;
     }
 
     @media (max-width: 600px) {
@@ -428,36 +460,20 @@
 
 <body>
   <main class="container">
-
     <h1>График работы</h1>
     <p class="subtitle">2 рабочих / 2 выходных</p>
 
     <div class="controls">
-
       <div class="switcher shift-switcher">
-        <button id="shift1Button" class="switch-button">
-          Смена 1
-        </button>
-
-        <button id="shift2Button" class="switch-button">
-          Смена 2
-        </button>
+        <button class="switch-button" data-shift="shift1">Смена 1</button>
+        <button class="switch-button" data-shift="shift2">Смена 2</button>
       </div>
 
       <div class="switcher theme-switcher">
-        <button id="themeSystem" class="switch-button">
-          Система
-        </button>
-
-        <button id="themeLight" class="switch-button">
-          Светлая
-        </button>
-
-        <button id="themeDark" class="switch-button">
-          Тёмная
-        </button>
+        <button class="switch-button" data-theme-choice="system">Система</button>
+        <button class="switch-button" data-theme-choice="light">Светлая</button>
+        <button class="switch-button" data-theme-choice="dark">Тёмная</button>
       </div>
-
     </div>
 
     <section class="status-card">
@@ -467,39 +483,22 @@
     </section>
 
     <section class="next-days">
-
       <div class="info-card">
-        <div class="info-title">Следующие выходные</div>
-        <div id="nextDaysOff" class="info-value"></div>
+        <div id="offTitle" class="info-title"></div>
+        <div id="offValue" class="info-value"></div>
       </div>
 
       <div class="info-card">
-        <div class="info-title">Следующие рабочие дни</div>
-        <div id="nextWorkDays" class="info-value"></div>
+        <div id="workTitle" class="info-title"></div>
+        <div id="workValue" class="info-value"></div>
       </div>
-
     </section>
 
-    <section class="calendar">
-
+    <section id="calendar" class="calendar">
       <div class="calendar-header">
-        <button
-          id="prevMonth"
-          class="calendar-nav-button"
-          aria-label="Предыдущий месяц"
-        >
-          ‹
-        </button>
-
+        <button id="prevMonth" class="calendar-nav-button" aria-label="Предыдущий месяц">‹</button>
         <div id="monthTitle" class="month-title"></div>
-
-        <button
-          id="nextMonth"
-          class="calendar-nav-button"
-          aria-label="Следующий месяц"
-        >
-          ›
-        </button>
+        <button id="nextMonth" class="calendar-nav-button" aria-label="Следующий месяц">›</button>
       </div>
 
       <div class="weekdays">
@@ -515,7 +514,6 @@
       <div id="days" class="days"></div>
 
       <div class="month-stats">
-
         <div class="stat-card work">
           <div id="monthShifts" class="stat-value">0</div>
           <div class="stat-label">Смен</div>
@@ -535,7 +533,6 @@
           <div id="monthDays" class="stat-value">0</div>
           <div class="stat-label">Дней в месяце</div>
         </div>
-
       </div>
 
       <div class="hours-note">
@@ -543,542 +540,388 @@
       </div>
 
       <div class="legend">
-
-        <div class="legend-item">
-          <span class="dot off"></span>
-          Выходной
-        </div>
-
-        <div class="legend-item">
-          <span class="dot work"></span>
-          Работа
-        </div>
-
-        <div class="legend-item">
-          <span class="dot today"></span>
-          Сегодня
-        </div>
-
+        <div class="legend-item"><span class="dot off"></span>Выходной</div>
+        <div class="legend-item"><span class="dot work"></span>Работа</div>
+        <div class="legend-item"><span class="dot today"></span>Сегодня</div>
       </div>
 
       <button id="goToday" class="today-button">
         Вернуться к текущему месяцу
       </button>
-
     </section>
-
   </main>
 
   <script>
-    const anchorDate = new Date(2026, 8, 23);
+    // День, от которого отсчитывается цикл смен
+    const ANCHOR_DATE = new Date(2026, 8, 23);
 
-    const schedules = {
+    const SCHEDULES = {
       shift1: ["off", "off", "work", "work"],
       shift2: ["work", "work", "off", "off"]
     };
 
-    const shiftDuration = 12;
-    const lunchHours = 1;
-    const paidWorkHours = shiftDuration - lunchHours;
+    const THEMES = ["system", "light", "dark"];
 
-    let selectedShift =
-      localStorage.getItem("selectedShift") || "shift1";
+    const SHIFT_HOURS = 12;
+    const LUNCH_HOURS = 1;
+    const PAID_HOURS = SHIFT_HOURS - LUNCH_HOURS;
 
-    let selectedTheme =
-      localStorage.getItem("selectedTheme") || "system";
+    // Минимальная длина горизонтального свайпа в пикселях
+    const SWIPE_DISTANCE = 50;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    let currentYear = today.getFullYear();
-    let currentMonth = today.getMonth();
-
-    const monthNames = [
-      "январь",
-      "февраль",
-      "март",
-      "апрель",
-      "май",
-      "июнь",
-      "июль",
-      "август",
-      "сентябрь",
-      "октябрь",
-      "ноябрь",
-      "декабрь"
+    const MONTHS = [
+      "январь", "февраль", "март", "апрель", "май", "июнь",
+      "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"
     ];
 
-    const monthNamesGenitive = [
-      "января",
-      "февраля",
-      "марта",
-      "апреля",
-      "мая",
-      "июня",
-      "июля",
-      "августа",
-      "сентября",
-      "октября",
-      "ноября",
-      "декабря"
+    const MONTHS_GENITIVE = [
+      "января", "февраля", "марта", "апреля", "мая", "июня",
+      "июля", "августа", "сентября", "октября", "ноября", "декабря"
     ];
 
-    function normalizeDate(date) {
-      return new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-      );
+    const $ = (id) => document.getElementById(id);
+
+    // localStorage может быть недоступен (приватный режим) или хранить мусор
+    function loadSetting(key, allowed, fallback) {
+      try {
+        const value = localStorage.getItem(key);
+        return allowed.includes(value) ? value : fallback;
+      } catch (error) {
+        return fallback;
+      }
     }
 
-    function getDifferenceInDays(date1, date2) {
-      const utc1 = Date.UTC(
-        date1.getFullYear(),
-        date1.getMonth(),
-        date1.getDate()
-      );
-
-      const utc2 = Date.UTC(
-        date2.getFullYear(),
-        date2.getMonth(),
-        date2.getDate()
-      );
-
-      return Math.floor((utc1 - utc2) / 86400000);
+    function saveSetting(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (error) {
+        // Без сохранения настройка просто живёт до перезагрузки
+      }
     }
 
-    function getDayType(date) {
-      const diff = getDifferenceInDays(
-        normalizeDate(date),
-        anchorDate
-      );
+    let selectedShift = loadSetting("selectedShift", Object.keys(SCHEDULES), "shift1");
+    let selectedTheme = loadSetting("selectedTheme", THEMES, "system");
 
-      const cycleDay = ((diff % 4) + 4) % 4;
+    let today = startOfToday();
+    let viewYear = today.getFullYear();
+    let viewMonth = today.getMonth();
 
-      return schedules[selectedShift][cycleDay];
+    // ---------- Даты ----------
+
+    function startOfToday() {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      return date;
     }
 
-    function isWorkDay(date) {
-      return getDayType(date) === "work";
+    function addDays(date, days) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+    }
+
+    function daysBetween(date1, date2) {
+      const utc1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
+      const utc2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
+      return Math.round((utc1 - utc2) / 86400000);
     }
 
     function isSameDate(date1, date2) {
-      return (
-        date1.getFullYear() === date2.getFullYear() &&
-        date1.getMonth() === date2.getMonth() &&
-        date1.getDate() === date2.getDate()
-      );
+      return daysBetween(date1, date2) === 0;
+    }
+
+    function isCurrentMonthShown() {
+      return viewYear === today.getFullYear() && viewMonth === today.getMonth();
     }
 
     function formatDate(date) {
-      return `${date.getDate()} ${
-        monthNamesGenitive[date.getMonth()]
-      } ${date.getFullYear()}`;
+      return `${formatShortDate(date)} ${date.getFullYear()}`;
     }
 
     function formatShortDate(date) {
-      return `${date.getDate()} ${
-        monthNamesGenitive[date.getMonth()]
-      }`;
+      return `${date.getDate()} ${MONTHS_GENITIVE[date.getMonth()]}`;
     }
 
-    function findNextPair(type) {
-      let date = new Date(today);
-
-      for (let i = 0; i < 10; i++) {
-        const currentType =
-          isWorkDay(date) ? "work" : "off";
-
-        const nextDate = new Date(date);
-        nextDate.setDate(nextDate.getDate() + 1);
-
-        const nextType =
-          isWorkDay(nextDate) ? "work" : "off";
-
-        if (
-          currentType === type &&
-          nextType === type
-        ) {
-          return [
-            new Date(date),
-            nextDate
-          ];
-        }
-
-        date.setDate(date.getDate() + 1);
+    function formatRange(start, end) {
+      if (start.getMonth() === end.getMonth()) {
+        return `${start.getDate()}–${end.getDate()} ${MONTHS_GENITIVE[end.getMonth()]}`;
       }
 
-      return null;
+      return `${formatShortDate(start)} – ${formatShortDate(end)}`;
     }
 
-    function updateShiftButtons() {
-      document
-        .getElementById("shift1Button")
-        .classList.toggle(
-          "active",
-          selectedShift === "shift1"
-        );
+    // ---------- График ----------
 
-      document
-        .getElementById("shift2Button")
-        .classList.toggle(
-          "active",
-          selectedShift === "shift2"
-        );
+    function getDayType(date) {
+      const cycle = SCHEDULES[selectedShift];
+      const diff = daysBetween(date, ANCHOR_DATE);
+      return cycle[((diff % cycle.length) + cycle.length) % cycle.length];
     }
 
-    function selectShift(shift) {
-      selectedShift = shift;
+    // Подряд идущие дни одного типа, в которые попадает date
+    function getBlock(date) {
+      const type = getDayType(date);
+      const maxLength = SCHEDULES[selectedShift].length;
+      let start = date;
+      let end = date;
 
-      localStorage.setItem(
-        "selectedShift",
-        selectedShift
-      );
+      for (let i = 0; i < maxLength && getDayType(addDays(start, -1)) === type; i++) {
+        start = addDays(start, -1);
+      }
 
-      updateShiftButtons();
-      updateStatus();
+      for (let i = 0; i < maxLength && getDayType(addDays(end, 1)) === type; i++) {
+        end = addDays(end, 1);
+      }
+
+      return { type, start, end };
+    }
+
+    // Текст карточки: идёт ли этот тип дней сейчас или когда будет следующий
+    function describeBlock(type) {
+      const current = getBlock(today);
+      const names = {
+        off: { now: "Сейчас выходные", next: "Следующие выходные" },
+        work: { now: "Сейчас рабочие дни", next: "Следующие рабочие дни" }
+      };
+
+      if (current.type === type) {
+        let value = `по ${formatShortDate(current.end)}`;
+
+        if (isSameDate(current.end, today)) {
+          value = "Сегодня последний день";
+        } else if (isSameDate(current.end, addDays(today, 1))) {
+          value = "Сегодня и завтра";
+        }
+
+        return { title: names[type].now, value };
+      }
+
+      let block = getBlock(addDays(current.end, 1));
+
+      while (block.type !== type) {
+        block = getBlock(addDays(block.end, 1));
+      }
+
+      return { title: names[type].next, value: formatRange(block.start, block.end) };
+    }
+
+    // ---------- Отрисовка ----------
+
+    function renderButtons() {
+      document.querySelectorAll("[data-shift]").forEach((button) => {
+        const active = button.dataset.shift === selectedShift;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active);
+      });
+
+      document.querySelectorAll("[data-theme-choice]").forEach((button) => {
+        const active = button.dataset.themeChoice === selectedTheme;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active);
+      });
+    }
+
+    function renderStatus() {
+      const type = getDayType(today);
+      const status = $("status");
+
+      status.textContent = type === "work" ? "Рабочий день" : "Выходной";
+      status.className = `status ${type}`;
+      $("todayDate").textContent = formatDate(today);
+
+      const off = describeBlock("off");
+      $("offTitle").textContent = off.title;
+      $("offValue").textContent = off.value;
+
+      const work = describeBlock("work");
+      $("workTitle").textContent = work.title;
+      $("workValue").textContent = work.value;
+    }
+
+    function renderCalendar() {
+      const days = $("days");
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+      // Неделя с понедельника: воскресенье (0) уходит в конец
+      const firstWeekday = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
+      let workDays = 0;
+
+      $("monthTitle").textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+      days.innerHTML = "";
+
+      for (let i = 0; i < firstWeekday; i++) {
+        days.appendChild(document.createElement("div"));
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(viewYear, viewMonth, day);
+        const type = getDayType(date);
+        const cell = document.createElement("div");
+
+        if (type === "work") {
+          workDays++;
+        }
+
+        cell.className = `day ${type}`;
+        cell.textContent = day;
+        cell.setAttribute(
+          "aria-label",
+          `${formatShortDate(date)}, ${type === "work" ? "рабочий" : "выходной"}`
+        );
+
+        if (isSameDate(date, today)) {
+          cell.classList.add("today");
+        }
+
+        days.appendChild(cell);
+      }
+
+      $("monthShifts").textContent = workDays;
+      $("monthDaysOff").textContent = daysInMonth - workDays;
+      $("monthHours").textContent = workDays * PAID_HOURS;
+      $("monthDays").textContent = daysInMonth;
+
+      $("goToday").hidden = isCurrentMonthShown();
+    }
+
+    function renderAll() {
+      renderButtons();
+      renderStatus();
       renderCalendar();
     }
 
-    function getSystemTheme() {
-      return window.matchMedia(
-        "(prefers-color-scheme: light)"
-      ).matches
-        ? "light"
-        : "dark";
-    }
+    // ---------- Тема ----------
 
     function applyTheme() {
-      const effectiveTheme =
-        selectedTheme === "system"
-          ? getSystemTheme()
-          : selectedTheme;
+      let theme = selectedTheme;
 
-      document.documentElement.setAttribute(
-        "data-theme",
-        effectiveTheme
-      );
+      if (theme === "system") {
+        theme = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      }
 
+      document.documentElement.dataset.theme = theme;
       document
         .querySelector('meta[name="theme-color"]')
-        .setAttribute(
-          "content",
-          effectiveTheme === "light"
-            ? "#f6f8fa"
-            : "#0d1117"
-        );
-
-      updateThemeButtons();
+        .setAttribute("content", theme === "light" ? "#f6f8fa" : "#0d1117");
     }
 
-    function updateThemeButtons() {
-      document
-        .getElementById("themeSystem")
-        .classList.toggle(
-          "active",
-          selectedTheme === "system"
-        );
+    // ---------- Действия ----------
 
-      document
-        .getElementById("themeLight")
-        .classList.toggle(
-          "active",
-          selectedTheme === "light"
-        );
-
-      document
-        .getElementById("themeDark")
-        .classList.toggle(
-          "active",
-          selectedTheme === "dark"
-        );
+    function selectShift(shift) {
+      selectedShift = shift;
+      saveSetting("selectedShift", shift);
+      renderAll();
     }
 
     function selectTheme(theme) {
       selectedTheme = theme;
-
-      localStorage.setItem(
-        "selectedTheme",
-        selectedTheme
-      );
-
+      saveSetting("selectedTheme", theme);
       applyTheme();
+      renderButtons();
     }
 
-    function updateStatus() {
-      const status =
-        document.getElementById("status");
-
-      const todayDate =
-        document.getElementById("todayDate");
-
-      const work = isWorkDay(today);
-
-      status.textContent =
-        work
-          ? "Рабочий день"
-          : "Выходной";
-
-      status.className =
-        `status ${work ? "work" : "off"}`;
-
-      todayDate.textContent =
-        formatDate(today);
-
-      const nextDaysOff =
-        findNextPair("off");
-
-      const nextWorkDays =
-        findNextPair("work");
-
-      document
-        .getElementById("nextDaysOff")
-        .textContent =
-          `${formatShortDate(nextDaysOff[0])} — ${formatShortDate(nextDaysOff[1])}`;
-
-      document
-        .getElementById("nextWorkDays")
-        .textContent =
-          `${formatShortDate(nextWorkDays[0])} — ${formatShortDate(nextWorkDays[1])}`;
+    function changeMonth(delta) {
+      const date = new Date(viewYear, viewMonth + delta, 1);
+      viewYear = date.getFullYear();
+      viewMonth = date.getMonth();
+      renderCalendar();
     }
 
-    function updateMonthStats() {
-      const daysInMonth =
-        new Date(
-          currentYear,
-          currentMonth + 1,
-          0
-        ).getDate();
+    function goToCurrentMonth() {
+      viewYear = today.getFullYear();
+      viewMonth = today.getMonth();
+      renderCalendar();
+    }
 
-      let workDays = 0;
-      let daysOff = 0;
+    // Если страница была открыта со вчера, переключаю «сегодня» на новый день
+    function refreshToday() {
+      const now = startOfToday();
 
-      for (
-        let day = 1;
-        day <= daysInMonth;
-        day++
-      ) {
-        const date =
-          new Date(
-            currentYear,
-            currentMonth,
-            day
-          );
-
-        if (isWorkDay(date)) {
-          workDays++;
-        } else {
-          daysOff++;
-        }
+      if (isSameDate(now, today)) {
+        return;
       }
 
-      const workHours =
-        workDays * paidWorkHours;
+      const wasOnCurrentMonth = isCurrentMonthShown();
+      today = now;
 
-      document
-        .getElementById("monthShifts")
-        .textContent = workDays;
-
-      document
-        .getElementById("monthDaysOff")
-        .textContent = daysOff;
-
-      document
-        .getElementById("monthHours")
-        .textContent = workHours;
-
-      document
-        .getElementById("monthDays")
-        .textContent = daysInMonth;
-    }
-
-    function renderCalendar() {
-      const daysContainer =
-        document.getElementById("days");
-
-      const monthTitle =
-        document.getElementById("monthTitle");
-
-      daysContainer.innerHTML = "";
-
-      monthTitle.textContent =
-        `${monthNames[currentMonth]} ${currentYear}`;
-
-      const firstDay =
-        new Date(
-          currentYear,
-          currentMonth,
-          1
-        );
-
-      const daysInMonth =
-        new Date(
-          currentYear,
-          currentMonth + 1,
-          0
-        ).getDate();
-
-      let startDay =
-        firstDay.getDay();
-
-      startDay =
-        startDay === 0
-          ? 6
-          : startDay - 1;
-
-      for (
-        let i = 0;
-        i < startDay;
-        i++
-      ) {
-        const empty =
-          document.createElement("div");
-
-        empty.className =
-          "day empty";
-
-        daysContainer.appendChild(
-          empty
-        );
+      if (wasOnCurrentMonth) {
+        viewYear = today.getFullYear();
+        viewMonth = today.getMonth();
       }
 
-      for (
-        let day = 1;
-        day <= daysInMonth;
-        day++
-      ) {
-        const date =
-          new Date(
-            currentYear,
-            currentMonth,
-            day
-          );
-
-        const dayElement =
-          document.createElement("div");
-
-        const work =
-          isWorkDay(date);
-
-        dayElement.className =
-          `day ${work ? "work" : "off"}`;
-
-        dayElement.textContent =
-          day;
-
-        if (
-          isSameDate(
-            date,
-            today
-          )
-        ) {
-          dayElement
-            .classList
-            .add("today");
-        }
-
-        daysContainer.appendChild(
-          dayElement
-        );
-      }
-
-      updateMonthStats();
+      renderAll();
     }
 
-    document
-      .getElementById("shift1Button")
-      .addEventListener(
-        "click",
-        () => selectShift("shift1")
-      );
+    function scheduleMidnightRefresh() {
+      const msToMidnight = addDays(startOfToday(), 1) - Date.now();
 
-    document
-      .getElementById("shift2Button")
-      .addEventListener(
-        "click",
-        () => selectShift("shift2")
-      );
+      setTimeout(() => {
+        refreshToday();
+        scheduleMidnightRefresh();
+      }, msToMidnight + 1000);
+    }
 
-    document
-      .getElementById("themeSystem")
-      .addEventListener(
-        "click",
-        () => selectTheme("system")
-      );
+    function setupSwipe() {
+      const calendar = $("calendar");
+      let start = null;
 
-    document
-      .getElementById("themeLight")
-      .addEventListener(
-        "click",
-        () => selectTheme("light")
-      );
+      calendar.addEventListener("touchstart", (event) => {
+        const touch = event.changedTouches[0];
+        start = { x: touch.clientX, y: touch.clientY };
+      }, { passive: true });
 
-    document
-      .getElementById("themeDark")
-      .addEventListener(
-        "click",
-        () => selectTheme("dark")
-      );
-
-    document
-      .getElementById("prevMonth")
-      .addEventListener(
-        "click",
-        () => {
-          currentMonth--;
-
-          if (currentMonth < 0) {
-            currentMonth = 11;
-            currentYear--;
-          }
-
-          renderCalendar();
+      calendar.addEventListener("touchend", (event) => {
+        if (!start) {
+          return;
         }
-      );
 
-    document
-      .getElementById("nextMonth")
-      .addEventListener(
-        "click",
-        () => {
-          currentMonth++;
+        const touch = event.changedTouches[0];
+        const dx = touch.clientX - start.x;
+        const dy = touch.clientY - start.y;
+        start = null;
 
-          if (currentMonth > 11) {
-            currentMonth = 0;
-            currentYear++;
-          }
-
-          renderCalendar();
+        if (Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy) * 1.5) {
+          changeMonth(dx < 0 ? 1 : -1);
         }
-      );
+      }, { passive: true });
+    }
 
-    document
-      .getElementById("goToday")
-      .addEventListener(
-        "click",
-        () => {
-          currentYear =
-            today.getFullYear();
+    // ---------- Запуск ----------
 
-          currentMonth =
-            today.getMonth();
+    document.querySelectorAll("[data-shift]").forEach((button) => {
+      button.addEventListener("click", () => selectShift(button.dataset.shift));
+    });
 
-          renderCalendar();
-        }
-      );
+    document.querySelectorAll("[data-theme-choice]").forEach((button) => {
+      button.addEventListener("click", () => selectTheme(button.dataset.themeChoice));
+    });
 
-    window
-      .matchMedia("(prefers-color-scheme: light)")
-      .addEventListener("change", () => {
-        if (selectedTheme === "system") {
-          applyTheme();
-        }
-      });
+    $("prevMonth").addEventListener("click", () => changeMonth(-1));
+    $("nextMonth").addEventListener("click", () => changeMonth(1));
+    $("goToday").addEventListener("click", goToCurrentMonth);
+
+    matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
+      if (selectedTheme === "system") {
+        applyTheme();
+      }
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        refreshToday();
+      }
+    });
+
+    window.addEventListener("focus", refreshToday);
 
     applyTheme();
-    updateShiftButtons();
-    updateStatus();
-    renderCalendar();
+    renderAll();
+    setupSwipe();
+    scheduleMidnightRefresh();
+
+    // Офлайн-режим работает только по http(s), с диска service worker не включится
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      navigator.serviceWorker.register("sw.js").catch((error) => {
+        console.warn("Не удалось включить офлайн-режим", error);
+      });
+    }
   </script>
 </body>
 </html>
